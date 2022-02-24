@@ -1,0 +1,115 @@
+AppController.php
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\DB;
+
+class AppController extends Controller
+{
+    //
+
+    public function index()
+    {
+        return view('index');
+    }
+
+
+    public function RegisterUser(Request $req){
+
+        $req->hasFile('img');
+        $img = $req->file('img');
+        $tmp = "Photo".time().".".$img->getClientOriginalExtension();
+        $img->move(public_path("/img") , $tmp);
+
+        DB::table('usermaster')->insert([
+            "username" => $req->username,
+            "img" => $tmp,
+            "hobby" => implode("," , $req->hobby),
+            "password" => $req->password,
+        ]);
+
+        return redirect('index');
+
+    }
+
+    public function Login_user(Request $req){
+
+        $query = DB::table('usermaster')->get()->where("username" , $req->username)->where("password" , $req->password);
+        $req->session()->put('suser' , $req->username);
+
+        if(count($query) > 0)
+        {
+            return redirect('home');
+        }
+        else
+        {
+            return redirect('index');
+        }
+
+
+    }
+
+    public function getUserSession(Request $req)
+    {
+        if($req->session()->has('suser'))
+        {
+            echo $req->session()->get('suser');
+        }
+        else
+        {
+            echo "No Session";
+        }
+    }
+
+    public function Logout_user(Request $req)
+    {
+        $req->session()->remove('suser');
+        return redirect('index');
+    }
+
+
+    public function fetchData(Request $req)
+    {
+        $data = DB::table('usermaster')->get();
+        return view('home' , ['data' => $data]);
+    }
+
+    public function updateData(Request $req)
+    {
+        // echo $req->id;
+
+        if($req->id != null)
+        {
+            $getUserData = DB::table('usermaster')->get()->where('id' , $req->id);
+            return view('update' , ['data' => $getUserData]);
+        }
+
+    }
+
+    public function finalUpdate(Request $req)
+    {
+        // echo $req->id;
+
+        if($req->id != null)
+        {
+            DB::table('usermaster')->where('id' , $req->id)->update([
+            'username' => $req->username,
+            'password' => $req->password,
+            ]);
+
+            return redirect('home');
+        }
+
+    }
+
+    public function deleteUser(Request $req)
+    {
+        DB::table('usermaster')->where('id' , $req->id)->delete();
+        return redirect('home');
+    }
+
+}
